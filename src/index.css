@@ -1,0 +1,42 @@
+/* Diretivas do Tailwind: não apagar. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========== PALETA ==========
+   É AQUI que eu troco as cores do app inteiro.
+   Tema claro (padrão). Cada nome é usado no tailwind.config.js. */
+:root {
+  --bg: #e8edef;    /* fundo da página */
+  --surf: #f8fafb;  /* formulário, lista, inputs */
+  --tx: #0f2029;    /* texto principal */
+  --mut: #566a75;   /* texto secundário */
+  --bd: #c9d4d9;    /* bordas */
+  --ink: #123a52;   /* cor principal (botões, chip ativo) */
+  --inkx: #ffffff;  /* texto sobre a cor principal */
+
+  /* Status. bad = vencido, wrn = vence logo, ok = no prazo.
+     sem sufixo = cor do TEXTO, "b" = fundo do bloco da data, "x" = texto sobre o bloco */
+  --bad: #b3261e; --badb: #c8261b; --badx: #ffffff;
+  --wrn: #8a5a00; --wrnb: #f2b01e; --wrnx: #2e1f00;
+  --ok: #1f6b3d;  --okb: #2f7d4f;  --okx: #ffffff;
+}
+
+/* Tema escuro: entra sozinho quando o celular/PC está em modo escuro.
+   Mesmos nomes, valores diferentes. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0b1418; --surf: #121e24; --tx: #e3ecf0; --mut: #8fa5b0; --bd: #26383f;
+    --ink: #8ccbe6; --inkx: #08222d;
+    --bad: #ff8f84; --badb: #ff8f84; --badx: #33100c;
+    --wrn: #ffd166; --wrnb: #ffd166; --wrnx: #2e1f00;
+    --ok: #86dca3;  --okb: #86dca3;  --okx: #0b2515;
+  }
+}
+
+/* Estilos globais: cor/fonte do body e o contorno que aparece ao navegar pelo teclado. */
+@layer base {
+  body { @apply bg-bg font-sans font-medium text-tx; }
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+}
