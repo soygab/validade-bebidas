@@ -1,0 +1,32 @@
+name: Publicar no portfólio
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/checkout@v7
+        with:
+          repository: soygab/portfolio
+          token: ${{ secrets.PORTFOLIO_TOKEN }}
+          path: portfolio
+      - run: |
+          rm -rf portfolio/validade
+          mkdir -p portfolio/validade
+          cp -r dist/. portfolio/validade/
+          cd portfolio
+          git config user.name "deploy-bot"
+          git config user.email "deploy-bot@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || (git commit -m "atualiza validade" && git push)
