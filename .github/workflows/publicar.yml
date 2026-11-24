@@ -1,3 +1,6 @@
+# A cada push na main: gera o build e copia para a pasta /validade do repositório soygab/portfolio.
+# Precisa do secret PORTFOLIO_TOKEN e das Variables VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY
+# (Settings -> Secrets and variables -> Actions).
 name: Publicar no portfólio
 
 on:
@@ -16,6 +19,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - uses: actions/checkout@v7
         with:
           repository: soygab/portfolio

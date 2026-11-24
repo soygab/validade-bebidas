@@ -40,7 +40,7 @@ export default function Configuracoes({ dados, onAlerta, onImportar }) {
           <input type="file" accept=".json" hidden onChange={importar} />
         </label>
       </div>
-      <p>Os dados ficam salvos só neste navegador. Use o backup para levar para outro aparelho.</p>
+      <p>Os dados ficam salvos no servidor e são compartilhados com a equipe. O backup baixa uma cópia em JSON; importar adiciona os itens do arquivo na lista. O alerta em dias vale só para este aparelho.</p>
     </details>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { STATUS, UNIDADES } from '../constants';
 import { diasAte, partesData, statusDe, textoDias } from '../utils/dates';
+import { nomePessoa } from '../utils/pessoa';
 
 // Visual dos botões − e +
 const passo = 'h-[38px] w-[38px] rounded-md border border-line bg-bg text-xl';
@@ -28,7 +29,8 @@ export default function ItemRow({ item, alerta, onAjustar, onRemover }) {
       {/* Nome, local e status */}
       <div className="min-w-0 px-3.5 py-2.5">
         <div className="text-[1.05rem] font-semibold">{item.nome}</div>
-        <div className="text-sm text-mut">{item.local}</div>
+        {/* Local e quem cadastrou (vem da coluna "por" do banco) */}
+        <div className="text-sm text-mut">{item.local}{item.por ? ` · por ${nomePessoa(item.por)}` : ''}</div>
         <div className="mt-0.5 flex items-center gap-3.5">
           <span className={`text-sm font-semibold ${s.txt}`}>{textoDias(diasAte(item.val))}</span>
           <button type="button" className="text-sm text-mut underline"

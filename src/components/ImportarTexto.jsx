@@ -10,9 +10,9 @@ import { Campo, campo } from '../ui';
 const EXEMPLO = `Geladeira Heineken
 Heineken: (1 fardo) 25/12/26
 
-Geladeira Spaten
-Baden Baden Ipa; 2 fardos; 15/12/2026
-Heineken Ultimate - 20/01/2027 - 1 caixa
+Geladeira 1
+Heineken long neck; 2 fardos; 15/12/2026
+Skol lata - 20/01/2027 - 1 caixa
 
 Câmara fria
 Coca-Cola 2L, 3 un, 10/02/27
@@ -42,7 +42,7 @@ export default function ImportarTexto({ locais, onAdd }) {
 
       <p className="mt-2 text-sm text-mut">
         Uma bebida por linha, com nome e data. O local pode vir na linha ou num título acima
-        (ex.: uma linha só com “Geladeira Heineken”; se o local não existir, ele é criado). Quantidade é opcional:
+        (ex.: uma linha só com “Geladeira 1”; se o local não existir, ele é criado). Quantidade é opcional:
         2 fardos, (1 fardo), 3 caixas, 12 un, 3x.
       </p>
 

@@ -1,12 +1,5 @@
 // Valores fixos do app. Quase tudo que eu quero ajustar com frequência está aqui.
 
-// Chave do localStorage. Se eu mudar, os dados salvos "somem" (ficam na chave antiga).
-export const STORAGE_KEY = 'validade-bebidas-v1';
-
-// Locais que já vêm cadastrados. Para mudar os iniciais, edito esta lista.
-// (Só vale para quem ainda não salvou nada; locais novos eu crio pela tela, no "+ local".)
-export const LOCAIS_PADRAO = ['Câmara fria', 'Geladeira Heineken', 'Geladeira Spaten', 'Geladeira Coca', 'Geladeira FYS'];
-
 // Opções do seletor de quantidade: [valor salvo, texto que aparece no select].
 // Para criar uma unidade nova (ex.: "Barril"), adiciono aqui E em UNIDADES logo abaixo.
 export const OPCOES_UN = [['un', 'Unidade'], ['fardo', 'Fardo'], ['caixa', 'Caixa']];

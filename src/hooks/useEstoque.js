@@ -1,71 +1,97 @@
-// Hook que guarda TODOS os dados do app (itens, locais, dias de alerta)
-// e salva no localStorage sempre que algo muda.
-// Se um dia eu trocar o localStorage por um backend/API, é só este arquivo que muda:
-// os componentes só chamam as funções que ele devolve.
-import { useEffect, useState } from 'react';
-import { LOCAIS_PADRAO, STORAGE_KEY } from '../constants';
+// Hook que guarda os DADOS (itens e locais) e conversa com o Supabase.
+// Os dados ficam no banco, então toda a equipe enxerga a mesma lista.
+// Quando alguém altera algo, o Realtime avisa e eu recarrego a lista (função "carregar").
+// O dias do alerta (amarelo) fica só no navegador de cada pessoa.
+import { useCallback, useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
-// Estado inicial (primeira vez que abro o app).
-// Cada item é: { id, nome, local, qtd, un, val } (val no formato 'AAAA-MM-DD')
-const INICIAL = { itens: [], locais: LOCAIS_PADRAO, alerta: 7 };
-
-// Lê o que estava salvo. Se não tiver nada (ou o storage falhar), usa o INICIAL.
-function carregar() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...INICIAL, ...JSON.parse(raw) } : INICIAL;
-  } catch {
-    return INICIAL;
-  }
-}
-
-// Gera um id único simples para cada item.
-const novoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const ALERTA_KEY = 'validade-bebidas-alerta';
 
 export function useEstoque() {
-  const [s, setS] = useState(carregar);
+  const [itens, setItens] = useState([]);   // cada item: { id, nome, local, qtd, un, val, por, criado_em }
+  const [locais, setLocais] = useState([]); // lista de nomes
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
+  const [alerta, setAlertaEstado] = useState(() => {
+    try { return Number(localStorage.getItem(ALERTA_KEY)) || 7; } catch { return 7; }
+  });
 
-  // Toda vez que "s" muda, salva no navegador.
+  // Busca tudo no banco.
+  const carregar = useCallback(async () => {
+    const [i, l] = await Promise.all([
+      supabase.from('itens').select('*').order('val'),
+      supabase.from('locais').select('nome').order('nome'),
+    ]);
+    const falha = i.error || l.error;
+    if (falha) setErro(falha.message);
+    else { setErro(''); setItens(i.data); setLocais(l.data.map((x) => x.nome)); }
+    setCarregando(false);
+  }, []);
+
+  // Carrega ao abrir e fica "escutando" mudanças feitas por qualquer pessoa da equipe.
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch { /* sem storage, segue sem salvar */ }
-  }, [s]);
+    carregar();
+    const canal = supabase.channel('estoque')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'itens' }, carregar)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'locais' }, carregar)
+      .subscribe();
+    return () => { supabase.removeChannel(canal); };
+  }, [carregar]);
+
+  // Roda uma operação do banco; se der erro mostra na tela, senão recarrega a lista.
+  const exec = async (req) => {
+    const { error } = await req;
+    if (error) setErro(error.message); else carregar();
+  };
+
+  // Cria locais que ainda não existem (ignora os repetidos).
+  const criarLocais = (nomes) =>
+    supabase.from('locais').upsert(nomes.map((nome) => ({ nome })), { onConflict: 'nome', ignoreDuplicates: true });
+
+  // Cadastra vários itens (importação de texto/backup). Locais novos são criados antes.
+  // A coluna "por" (quem cadastrou) o banco preenche sozinho com o email de quem está logado.
+  const adicionarVarios = async (lista) => {
+    const novos = [...new Set(lista.map((i) => i.local))].filter((n) => !locais.includes(n));
+    if (novos.length) {
+      const { error } = await criarLocais(novos);
+      if (error) return setErro(error.message);
+    }
+    await exec(supabase.from('itens').insert(lista));
+  };
 
   return {
-    ...s, // itens, locais, alerta
+    itens, locais, alerta, carregando, erro,
 
-    // Cadastra um item novo (o formulário manda nome, local, qtd, un e val).
-    adicionar: (item) => setS((p) => ({ ...p, itens: [...p.itens, { ...item, id: novoId() }] })),
+    adicionar: (item) => exec(supabase.from('itens').insert(item)),
+    adicionarVarios,
 
-    // Cadastra vários de uma vez (usado pela importação de texto).
-    // O índice (k) no id evita ids repetidos quando todos nascem no mesmo milissegundo.
-    // Locais que apareceram no texto e ainda não existiam são criados junto.
-    adicionarVarios: (lista) =>
-      setS((p) => ({
-        ...p,
-        locais: [...new Set([...p.locais, ...lista.map((i) => i.local)])],
-        itens: [...p.itens, ...lista.map((i, k) => ({ ...i, id: novoId() + k }))],
-      })),
+    // delta = +1 / -1. Chegando a 0, o item é apagado.
+    ajustar: (id, delta) => {
+      const item = itens.find((x) => x.id === id);
+      if (!item) return;
+      const qtd = item.qtd + delta;
+      return exec(qtd > 0
+        ? supabase.from('itens').update({ qtd }).eq('id', id)
+        : supabase.from('itens').delete().eq('id', id));
+    },
 
-    // Soma ou subtrai quantidade (delta = +1 ou -1).
-    // Se chegar a 0, o item é removido automaticamente (.filter no final).
-    ajustar: (id, delta) =>
-      setS((p) => ({
-        ...p,
-        itens: p.itens.map((i) => (i.id === id ? { ...i, qtd: i.qtd + delta } : i)).filter((i) => i.qtd > 0),
-      })),
+    remover: (id) => exec(supabase.from('itens').delete().eq('id', id)),
 
-    // Apaga o item de vez.
-    remover: (id) => setS((p) => ({ ...p, itens: p.itens.filter((i) => i.id !== id) })),
+    novoLocal: (nome) => exec(criarLocais([nome])),
 
-    // Adiciona um local novo (ignora se já existir).
-    novoLocal: (nome) => setS((p) => (p.locais.includes(nome) ? p : { ...p, locais: [...p.locais, nome] })),
+    // Alerta fica só neste aparelho (localStorage).
+    setAlerta: (n) => {
+      const v = Math.max(1, Number(n) || 7);
+      setAlertaEstado(v);
+      try { localStorage.setItem(ALERTA_KEY, String(v)); } catch { /* sem storage */ }
+    },
 
-    // Muda os dias do alerta amarelo. Mínimo 1; valor inválido volta para 7.
-    setAlerta: (n) => setS((p) => ({ ...p, alerta: Math.max(1, Number(n) || 7) })),
-
-    // Importa um backup JSON (só aceita se tiver "itens" e "locais").
-    importar: (d) => {
-      if (Array.isArray(d?.itens) && Array.isArray(d?.locais)) setS((p) => ({ ...p, ...d }));
+    // Importa um backup .json: cria os locais e adiciona os itens (sem apagar nada).
+    importar: async (d) => {
+      if (!Array.isArray(d?.itens) || !Array.isArray(d?.locais)) return;
+      const extras = d.locais.filter((n) => !locais.includes(n));
+      if (extras.length) await criarLocais(extras);
+      await adicionarVarios(d.itens.map(({ nome, local, qtd, un, val }) => ({ nome, local, qtd, un: un || 'un', val })));
     },
   };
 }
