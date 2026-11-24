@@ -30,7 +30,7 @@ export default function Login() {
   };
 
   return (
-    <main className="mx-auto max-w-sm px-3.5 pt-16">
+    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-3.5">
       <form onSubmit={enviar} className="grid gap-3 rounded-xl border border-line bg-surf p-4">
         {criar && (
           <Campo label="Seu nome">

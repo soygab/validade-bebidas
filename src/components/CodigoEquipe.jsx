@@ -21,7 +21,7 @@ export default function CodigoEquipe({ onOk }) {
   };
 
   return (
-    <main className="mx-auto max-w-sm px-3.5 pt-16">
+    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-3.5">
       <h1 className="mb-2 font-cond text-5xl font-bold leading-none">Validade</h1>
       <p className="mb-4 text-mut">Sua conta foi criada. Digite o código da equipe para liberar o acesso.</p>
       <form onSubmit={enviar} className="grid gap-3 rounded-xl border border-line bg-surf p-4">
